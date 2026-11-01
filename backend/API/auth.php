@@ -109,6 +109,11 @@
                 echo json_encode([
                     "success" => true,
                     "message" => "Session found!",
+                    "user" => [
+                            "userid" => $_SESSION['user_id'],
+                            "username" => $_SESSION['username'],
+                            "role" => $_SESSION['role']
+                    ]
                 ]);
 
             }
@@ -164,7 +169,7 @@
 
             if(!empty($fetch)){
                 if($fetch['is_verified'] != 0){
-                    $fetched_pwd = htmlentities($fetch['password']);
+                    $fetched_pwd = $fetch['password'];
     
                     if(password_verify($password , $fetched_pwd)){
                         $_SESSION['user_id'] = $fetch['id'];
@@ -204,9 +209,9 @@
             $fetch = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if(!empty($fetch)){
-                $fetched_username = htmlentities($fetch['username']);
-                $fetched_email = htmlentities($fetch['email']);
-                $fetched_role = htmlentities($fetch['role']);
+                $fetched_username = $fetch['username'];
+                $fetched_email = $fetch['email'];
+                $fetched_role = $fetch['role'];
                 http_response_code(200);
                 echo json_encode([  
                     "success" => true, 

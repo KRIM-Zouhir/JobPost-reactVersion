@@ -35,7 +35,7 @@
 
         case 'create':        
             try{
-                createPost($db, $_SESSION['user_id'], $data['title'], $data['company'], $data['location'], $data['type'], $data['description'], $data['salary'], $data['place']);
+                createPost($db, $_SESSION['user_id'], $data['data']['title'], $data['data']['company'], $data['data']['location'], $data['data']['type'], $data['data']['description'], $data['data']['salary'], $data['data']['place']);
             }catch(Exception $e){
                 http_response_code(400);
                 echo json_encode([
@@ -44,9 +44,28 @@
                 ]);
             }
             break;
+        case 'edit':
+            try{
+                editPost($db, $data['data']['postid'], $data['data']['title'], $data['data']['company'], $data['data']['location'], $data['data']['type'], $data['data']['description'], $data['data']['salary'], $data['data']['place'], $data['data']['status']);
+            }catch(Exception $e){
+                http_response_code(400);
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Some infos are required"
+                ]);
+            }
+            break;
+        case 'delete': 
+            try{
+                removePost($db, $data['data']['postid']);
+            }catch(Exception $e){
+                http_response_code(400);
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Some infos are required"
+                ]);
+            }
     }
-
-
 
     function getpost($db, $start, $rows_per_page){
         try{   
@@ -96,7 +115,7 @@
     function createPost($db, $adminid, $title, $company, $location, $type, $desciption, $salary, $place){
         try{
                 $table = "posts" ; 
-                $sql = "INSERT INTO "  . $table . "(admin_id, title, company, location,type,description, salary, is_active) VALUES (:admin_id , :title, :company , :location, :type , :description , :salary, :is_active)";
+                $sql = "INSERT INTO "  . $table . "(admin_id, title, company, location,type,description, salary, is_active, place) VALUES (:admin_id , :title, :company , :location, :type , :description , :salary, :is_active)";
 
                 $stmt = $db->prepare($sql);
                 $stmt->bindValue(':admin_id', $adminid);
@@ -107,6 +126,7 @@
                 $stmt->bindValue(':description', $desciption);
                 $stmt->bindValue(':salary', $salary);
                 $stmt->bindValue(':is_active', "1");
+                $stmt->bindValue(':place', $place);
 
                 $stmt->execute();
 
@@ -115,6 +135,60 @@
         }catch(PDOException $e){
             http_response_code(400);
             echo json_encode(["success" => false, "message" => "Request Issued !"]);
+        }
+    }
+
+    function editPost($db, $id, $title, $comapny, $location, $type, $desciption, $salary, $place, $status){
+        try{
+            $sql = "UPDATE posts
+                    SET title = :title,
+                        company = :company,
+                        location = :location,
+                        type = :type,
+                        description = :description,
+                        salary = :salary,
+                        is_active = :is_active,
+                        place = :place
+                    WHERE id = :id";
+
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue('id', $id);
+            $stmt->bindValue('title', $title);
+            $stmt->bindValue('company', $comapny);
+            $stmt->bindValue('location', $location);
+            $stmt->bindValue('type', $type);
+            $stmt->bindValue('description', $desciption);
+            $stmt->bindValue('is_active', $status);
+            $stmt->bindValue('salary', $salary);
+            $stmt->bindValue('place', $place);
+            
+            $stmt->execute();
+
+            http_response_code(200);
+            echo json_encode([  "success" => true, "message" => "Post Edited Successfully !"]);
+
+        }catch(PDOException $e){
+            error_log($e);
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Request Issued !", "error" => $e]);
+        }
+    }
+
+    function removePost($db, $postid){
+        try{
+            $sql = "DELETE FROM posts WHERE id = :id";
+
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue('id', $postid);
+
+            $stmt->execute();
+
+            http_response_code(200);
+            echo json_encode([  "success" => true, "message" => "Post Deleted Successfully !"]);
+        }catch(PDOException $e){
+            error_log($e);
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Request Issued !", "error" => $e]);
         }
     }
 

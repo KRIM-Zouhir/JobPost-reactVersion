@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import {getApps, statusAdmin} from '../api/applications';
 import { Link, useNavigate } from 'react-router-dom';
+
+import {getApps, statusAdmin} from '../api/applications';
+import { verifySession} from '../api/auth.ts'
 
 
 type Application = {
@@ -22,7 +24,7 @@ function Applications(){
     const [message, setMessage] = useState("");
     const [applications, setApplications] = useState<Application[]>([]);
 
-    const checkSession = useCallback(async () => {
+    const checkApps = useCallback(async () => {
         const session = await getApps(start, rows);
         if(session.success){
             setApplications(session.data);
@@ -30,14 +32,25 @@ function Applications(){
     }, [])
 
     useEffect(() => {
+        async function checkSession(){
+            const session = await verifySession();
+            if(!session.success || session.user.role != "admin"){
+                redirect("/login")
+            }
+        }
 
         checkSession();
-    }, [checkSession])
+    }, [redirect])
+
+    useEffect(() => {
+
+        checkApps();
+    }, [checkApps])
 
     async function statusApp(appid: number, status: string){
         const session = await statusAdmin(appid, status);
         setMessage(session.message);
-        if(session.success) {checkSession();}
+        if(session.success) {checkApps();}
     }
 
 

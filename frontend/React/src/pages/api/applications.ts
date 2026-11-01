@@ -1,9 +1,8 @@
-import { Form } from "react-router-dom";
 
-export async function applyAPI(postid : string, posttitle : string, cv: File , cover: File | null){
+export async function applyAPI(postid : number, posttitle : string, cv: File , cover: File | null){
     const formData = new FormData(); 
         formData.append("action", "apply");
-        formData.append("postid", postid);
+        formData.append("postid", String(postid));
         formData.append("posttitle", posttitle);
         formData.append("cvfile", cv);
         if(cover){
