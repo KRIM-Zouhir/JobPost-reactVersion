@@ -112,27 +112,26 @@ function Posts(){
 
                     <div className='grid grid-cols-3 gap-4 p-4'>
                         {posts.map((post) => 
+                            <article key={post.postid} >
+                                <h5>{post.adminid}</h5>
+                                <h5>{post.title}</h5>
+                                <h5>{post.company}</h5>
+                                <p>{post.location} | {post.place}</p>
+                                <p>{post.type}</p>
+                                <p>{post.description}</p>
+                                <p>{post.salary}</p>
+                                <p>{post.status}</p>
+                                <button type="button" onClick={() => {setSelectedPost(post);
+                                                                    setEditForm(prev => !prev) }}>
+                                    Edit post
+                                </button>
 
-                        <article key={post.postid} >
-                            <h5>{post.adminid}</h5>
-                            <h5>{post.title}</h5>
-                            <h5>{post.company}</h5>
-                            <p>{post.location} | {post.place}</p>
-                            <p>{post.type}</p>
-                            <p>{post.description}</p>
-                            <p>{post.salary}</p>
-                            <p>{post.status}</p>
-                            <button type="button" onClick={() => {setSelectedPost(post);
-                                                                 setEditForm(prev => !prev) }}>
-                                Edit post
-                            </button>
+                                <button type="button" onClick={() => (setSelectedPost(post),
+                                                                    setDeleteForm(prev => !prev))}>
+                                    Delete post
+                                </button>
 
-                            <button type="button" onClick={() => (setSelectedPost(post),
-                                                                 setDeleteForm(prev => !prev))}>
-                                Delete post
-                            </button>
-
-                        </article>
+                            </article>
                         )}
 
                     </div>

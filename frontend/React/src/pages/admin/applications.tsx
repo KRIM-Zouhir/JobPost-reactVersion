@@ -31,6 +31,10 @@ function Applications(){
         }
     }, [])
 
+    // useEffect(() => {
+
+    // }, [redirect])
+
     useEffect(() => {
         async function checkSession(){
             const session = await verifySession();
@@ -40,9 +44,6 @@ function Applications(){
         }
 
         checkSession();
-    }, [redirect])
-
-    useEffect(() => {
 
         checkApps();
     }, [checkApps])

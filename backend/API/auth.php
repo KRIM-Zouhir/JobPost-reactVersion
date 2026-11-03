@@ -14,17 +14,15 @@
 
     $data = json_decode(file_get_contents("php://input"), true);
     $action = $data['action'] ?? "";
+    session_start();
 
     switch($action){
-
-
         case 'signup':
             $signup_username = $data['username'] ?? '';
             $signup_email = filter_var($data['email']  ?? '' , FILTER_VALIDATE_EMAIL) ;
             $signup_password = $data['password'] ?? '';
 
             if($signup_username && $signup_email && $signup_password){
-                session_start();
                 signup($db, $signup_username, $signup_email, $signup_password);
             }
             break;
@@ -97,7 +95,7 @@
             }else{
                 session_start();
                 if(!isset($_SESSION['user_id']) ){
-                    http_response_code(200);
+                    http_response_code(400);
                     echo json_encode([
                         "success" => false,
                         "message" => "Info arent correct !",
@@ -119,7 +117,27 @@
             }
             break;
 
-
+            
+        case 'getUsers':
+            try{
+                getUsers($db, $data['start'], $data['row']);
+            }catch(Exception $e){
+                http_response_code(400);
+                echo json_encode([  "success" => true, 
+                                    "message" => "Infos arent correct !"]);
+            }
+            break;
+        case 'editUser':
+            try{
+                $infos = $data['infos'];
+                editUser($db, $infos);
+            }catch(Exception $e){
+                http_response_code(400);
+                echo json_encode([  "success" => true, 
+                                    "message" => "Infos arent correct !"]);
+            }
+            break;
+        
     }
 
 
@@ -152,10 +170,9 @@
 
         }catch(PDOException $e){
             http_response_code(400);
-            echo json_encode(["success" => false, "message" => "Singup Failed"]);
+            echo json_encode(["success" => false, "message" => "Request Issued !"]);
         }
     }
-
 
     function login($db, $username, $email,  $password){
         try{
@@ -195,7 +212,8 @@
             }
 
         }catch(PDOException $e){
-            return false;
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Request Issued !"]);
         }
     }
 
@@ -226,7 +244,85 @@
                 echo json_encode(["success" => false, "message" => "No user found with this ID !"]);
             }
         }catch(PDOException $e){
-            return false;
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Request Issued !"]);
+        }
+    }
+
+    function getUsers($db, $start, $row){
+        try{
+            $sql = "SELECT * FROM users LIMIT $start, $row";
+
+            $stmt = $db->prepare($sql);
+            $stmt->execute();
+            $fetchall = $stmt->fetchall(PDO::FETCH_ASSOC);
+
+            if(!empty($fetchall)){
+                $users=[];
+                foreach($fetchall as $row){
+                    $user = [
+                        'id' => $row['id'],
+                        'username' => $row['username'],
+                        'email' => $row['email'],
+                        'role' => $row['role'],
+                        'is_verified' => $row['is_verified'],
+                        'token' => $row['verification_token'],
+                        'tokenexpire' => $row['token_expires_at'],
+                        'date' => $row['created_at']
+                    ];
+                
+                    $users[]= $user;
+                }
+                http_response_code(200);
+                echo json_encode([  "success" => true, 
+                                    "message" => "Users found !", 
+                                    "data" => $users 
+                    ]);
+            }else{
+                http_response_code(404);
+                echo json_encode(["success" => false, "message" => "no users found"]);
+            }
+        }catch(PDOException $e){
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Request Issued !"]);
+        }
+    }
+
+    function editUser($db, $data){
+        try{
+            $sql = "UPDATE users SET
+                        username = :username, 
+                        email = :email,
+                        role = :role,
+                        is_verified = :is_verified,
+                        verification_token = :token,
+                        token_expires_at = :tokenexpire,
+                        created_at = :date
+
+                        WHERE  id = :userid";
+
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue('userid', $data['id']);
+            $stmt->bindValue('username', $data['username']);
+            $stmt->bindValue('email', $data['email']);
+            $stmt->bindValue('role', $data['role']);
+            $stmt->bindValue('is_verified', $data['is_verified']);
+            $stmt->bindValue('token', $data['token']);
+            $stmt->bindValue('tokenexpire', $data['tokenexpire']);
+            $stmt->bindValue('date', $data['date']);
+            $stmt->execute();
+
+            http_response_code(200);
+            echo json_encode([  "success" => true, 
+                                "message" => "Users found !"]);
+
+        }catch(PDOException $e){            
+            http_response_code(400);
+            echo json_encode([" success" => false, 
+                                "message" => "Request Issued !",
+                                "error" => $e,
+                                "debug" => $data['id']]);
+         
         }
     }
 ?>

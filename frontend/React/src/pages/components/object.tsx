@@ -13,3 +13,16 @@ export type Job = {
 
 export type JobPublic = Omit<Job, "adminid">;
 export type JobCreate = Omit<Job, "postid" | "adminid" | "status">;
+
+
+
+export type User = {
+    userid: string;
+    username: string;
+    email: string;
+    role: string;
+    is_verified: number;
+    token: string;
+    tokenexpire: string;
+    date: string;
+};
