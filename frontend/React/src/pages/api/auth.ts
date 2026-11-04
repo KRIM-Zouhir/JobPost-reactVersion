@@ -1,5 +1,5 @@
 
-import type { User } from "../components/object.tsx";
+import type { User, UserCreate } from "../components/object.tsx";
 
 export async function signupApi(username: string, email: string, password: string,) {
     const response = await fetch("http://localhost:8000/auth.php" , {
@@ -67,12 +67,34 @@ export async function getUsers(start: number, row: number){
     return response.json();
 }
 
+export async function createUser(infos: UserCreate){
+    const response = await fetch("http://localhost:8000/auth.php", {
+        method: "POST",
+        headers: { "Content-Type" : "application/json" },
+        credentials: "include",
+        body: JSON.stringify({action: "createUser", infos})
+    });
+
+    return response.json();
+}
+
 export async function editUser(infos: User){
     const response = await fetch("http://localhost:8000/auth.php", {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
         credentials: "include",
         body: JSON.stringify({action: "editUser", infos})
+    });
+
+    return response.json();
+}
+
+export async function deleteUser(infos: User){
+    const response = await fetch("http://localhost:8000/auth.php", {
+        method: "POST",
+        headers: { "Content-Type" : "application/json" },
+        credentials: "include",
+        body: JSON.stringify({action: "deleteUser", infos})
     });
 
     return response.json();

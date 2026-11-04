@@ -32,7 +32,6 @@
             $login_password = $data['password'] ?? '';
 
             if($login_input && $login_password){
-                session_start();
                 if(str_contains($login_input, "@")){
                     $login_email = $login_input;
                     $login_username = "";
@@ -48,7 +47,7 @@
 
         
         case 'profile':
-            session_start();
+
             if(!isset($_SESSION['user_id'])){
                 http_response_code(401);
                 echo json_encode([
@@ -127,6 +126,15 @@
                                     "message" => "Infos arent correct !"]);
             }
             break;
+        case 'createUser':
+            try{
+                addUser($db, $data['infos']);
+            }catch(Exception $e){
+                http_response_code(400);
+                echo json_encode([  "success" => true, 
+                                    "message" => "Infos arent correct !"]);
+            }
+            break;
         case 'editUser':
             try{
                 $infos = $data['infos'];
@@ -137,6 +145,17 @@
                                     "message" => "Infos arent correct !"]);
             }
             break;
+        case 'deleteUser':
+            try{
+                deleteUser($db, $data['infos']);
+            }catch(Exception $e){
+                http_response_code(400);
+                echo json_encode([  "success" => true, 
+                                    "message" => "Infos arent correct !"]);
+            
+            }
+            break;
+
         
     }
 
@@ -288,6 +307,40 @@
         }
     }
 
+    function addUser($db, $data){
+        try{
+            $password = password_hash($data['password'], PASSWORD_DEFAULT);
+            $token = bin2hex(random_bytes(32));
+            $tokentime = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+            
+            $sql = "INSERT INTO users 
+                        (username, email, password, role, verification_token, token_expires_at)
+                    VALUES
+                        (:username, :email, :password, :role, :verification_token, :token_expires_at)
+            ";
+
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':username', $data['username']);
+            $stmt->bindValue(':email', $data['email']);
+            $stmt->bindValue(':password', $password);
+            $stmt->bindValue(':role', $data['role']);
+            $stmt->bindValue(':verification_token', $token);
+            $stmt->bindValue(':token_expires_at', $tokentime);
+            $stmt->execute();
+
+            http_response_code(200);
+            echo json_encode([  "success" => true, 
+                                "message" => "Users Edited !"]);
+
+        }catch(PDOException $e){            
+            http_response_code(400);
+            echo json_encode([" success" => false, 
+                                "message" => "Request Issued !",
+                                "debug" => $e]);
+         
+        }
+    }
+
     function editUser($db, $data){
         try{
             $sql = "UPDATE users SET
@@ -314,15 +367,34 @@
 
             http_response_code(200);
             echo json_encode([  "success" => true, 
-                                "message" => "Users found !"]);
+                                "message" => "Users Edited !"]);
 
         }catch(PDOException $e){            
             http_response_code(400);
             echo json_encode([" success" => false, 
-                                "message" => "Request Issued !",
-                                "error" => $e,
-                                "debug" => $data['id']]);
+                                "message" => "Request Issued !"]);
          
+        }
+    }
+
+    function deleteUser($db, $data){
+        try{
+            $sql = "DELETE FROM users WHERE id = :userid";
+
+            $stmt = $db->prepare($sql);
+            $stmt->execute(
+                [':userid' => $data['id']]
+            );
+            http_response_code(200);
+            echo json_encode([  "success" => true, 
+                                "message" => "Users Deleted !"]);
+
+        }catch(PDOException $e){
+            http_response_code(400);
+            echo json_encode([" success" => false, 
+                                "message" => "Request Issued !"]);
+         
+        
         }
     }
 ?>

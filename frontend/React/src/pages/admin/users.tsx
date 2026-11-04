@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { getUsers, editUser } from '../api/auth';
-import type { User } from "../components/object.tsx";
+import { getUsers, editUser, deleteUser, createUser } from '../api/auth';
+import type { User,UserCreate } from "../components/object.tsx";
 import { verifySession} from '../api/auth.ts'
 
 
@@ -13,9 +13,19 @@ function Users(){
     const redirect = useNavigate();
 
     const [ users, setUsers ] = useState<User[]>([]);
-    const [ selectedUser, setSelectedUser ] = useState<User | null>(null)
+    const [ createdUser, setCreatedUser ] = useState<UserCreate>({
+        username: "",
+        email: "",
+        role: "user",
+        password: ""
+    });
+    const [ selectedUser, setSelectedUser ] = useState<User | null>(null);
+
+    const [ createForm, setCreateForm ] = useState(false);
     const [ editForm, setEditForm ] = useState(false);
     const [ deleteForm, setDeleteForm ] = useState(false);
+
+    const [confirm, setConfirm] = useState("");
 
     const verifyUsers = useCallback(async () => {
         const response = await getUsers(start, row);
@@ -39,13 +49,29 @@ function Users(){
     }, [verifyUsers])
 
 
+    function handleCreateUser(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>){
+        const { name, value } = e.target;
+        setCreatedUser(prev => (prev ? { ...prev, [name]: value} : prev));
+    }
     function handleEditUser(e: React.ChangeEvent<HTMLInputElement>){
         const { name, value } = e.target;
         setSelectedUser(prev => (prev ? { ...prev, [name]: value} : prev));
     }
 
+    async function reqAddUser(data: UserCreate){
+        const response = await createUser(data);
+        if(response.success){
+            verifyUsers();
+        }
+    }
     async function reqEditUser(data: User){
         const response = await editUser(data);
+        if(response.success){
+            verifyUsers();
+        }
+    }
+    async function reqDeleteUser(data: User){
+        const response = await deleteUser(data);
         if(response.success){
             verifyUsers();
         }
@@ -56,6 +82,10 @@ function Users(){
             <div className="min-h-screen flex flex-col justify-center items-center gap-4">
                 <div className='text-center'></div>
                     <p>Users</p>
+
+                    <div>
+                        <button type='button' onClick={() => setCreateForm(prev => !prev)}>Add User</button>
+                    </div>
 
                     <div className='grid grid-cols-3 gap-4 p-4'>
                         {users.map((user) => 
@@ -74,6 +104,20 @@ function Users(){
                     </div>
                     
 
+                    {createForm && (
+                        <div className=''>
+                            <input name='username' type="text" placeholder='username' value={createdUser.username} onChange={handleCreateUser}/>
+                            <input name='email' type="text" placeholder='email' value={createdUser.email} onChange={handleCreateUser}/>
+                            <select name="role" value={createdUser.role} onChange={handleCreateUser}>
+                                <option value="user">USER</option>
+                                <option value="admin">ADMIN</option>
+                            </select>
+                            <input name='password' type="text" placeholder='password' value={createdUser.password} onChange={handleCreateUser}/>
+
+                            <button type='button' onClick={() =>{ (reqAddUser(createdUser)), setCreateForm(prev => !prev)}}>Create</button>
+                        </div> 
+                    )}
+
                     {editForm && selectedUser && (
                         <div className=''>
                             <input name='username' type="text" value={selectedUser.username} onChange={handleEditUser} />
@@ -86,6 +130,15 @@ function Users(){
                             {selectedUser &&
                                 <button type='button' onClick={() => {reqEditUser(selectedUser), setEditForm(prev => !prev)}}>Edit</button>
                             }
+                        </div>
+                    )}
+
+                    {deleteForm && selectedUser && (
+                        <div className=''>
+                            <input type="text" placeholder='Type Confirm' onChange={(e) => setConfirm(e.target.value)}/>
+                            {confirm.toLowerCase() === "confirm" && (
+                                <button type="button" onClick={() => {reqDeleteUser(selectedUser), setDeleteForm(prev => !prev)}}>Confirm</button>
+                            )}
                         </div>
                     )}
             </div>

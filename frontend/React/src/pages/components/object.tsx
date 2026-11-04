@@ -26,3 +26,5 @@ export type User = {
     tokenexpire: string;
     date: string;
 };
+
+export type UserCreate = Omit<User, "userid" | "is_verified" | "token" | "tokenexpire" | "date"> & { password: string;};
