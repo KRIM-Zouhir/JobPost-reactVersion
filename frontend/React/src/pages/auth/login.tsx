@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate } from 'react-router-dom';
+
 import { loginApi, verifySession } from '../api/auth.ts'
-import { useNavigate } from 'react-router-dom';
 
 
 function Login(){
@@ -10,6 +11,8 @@ function Login(){
 
     const redirect = useNavigate();
 
+    const [notVerified, setNoVerified] = useState(false);
+
     async function handleLogin(e: React.FormEvent){
         e.preventDefault();
         const fetch = await loginApi(username, password);
@@ -17,6 +20,9 @@ function Login(){
             redirect("/profile");
         }else{
             setMessage(fetch.message);
+            if(!fetch.verify){
+                setNoVerified(true);
+            }
         }
     };
 
@@ -44,10 +50,17 @@ function Login(){
                                 className="flex w-full max-w-sm flex-col items-center justify-center gap-2 text-white">
                             <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username/Email" ></input>
                             <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" ></input>
+                            <Link to="/signup">Create an account ?</Link>
                             <br />
                             <button type="submit">Login</button>
                         </form>
                     </div>
+
+                    {notVerified && (
+                        <div className="">
+                            <a href="">Send new verify link (email)</a>
+                        </div>
+                    )}
                     
                 </div>
             </div>

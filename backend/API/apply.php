@@ -47,7 +47,6 @@
             }   
             break;
 
-
         case 'verifyApp':
             try{
                 $user_id = $_SESSION['user_id'];
@@ -60,7 +59,6 @@
 
             break;
             
-
         case 'getApp':
             try{
                 
@@ -73,7 +71,6 @@
                 echo json_encode(["success" => false, "message" => "Missing some infos !"]);
             }
             break;
-
 
         case 'statusApp':
             try{
@@ -194,7 +191,6 @@
         }
 
     }  
-
 
     function statusApp($db, $appid, $status){
         try{

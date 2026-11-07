@@ -1,5 +1,5 @@
 <?php 
-    include_once 'connect.php';
+
     header("Access-Control-Allow-Origin: http://localhost:5173");
     header("Access-Control-Allow-Credentials: true");
     header("Access-Control-Allow-Headers: Content-Type");
@@ -8,6 +8,11 @@
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         exit(0); 
     }
+    
+
+    require_once __DIR__ . '/connect.php';
+    require_once __DIR__ . '/helpers/helper.php';
+
 
     date_default_timezone_set('Europe/Paris');
     header("Content-Type: application/json");
@@ -61,7 +66,6 @@
             break;
 
         case 'logout':
-            session_start();
             $_SESSION = [];
 
 
@@ -92,7 +96,6 @@
                     "message" => "No session exist !",
                 ]);
             }else{
-                session_start();
                 if(!isset($_SESSION['user_id']) ){
                     http_response_code(400);
                     echo json_encode([
@@ -183,7 +186,13 @@
             $stmt->bindValue(':verify_token', $token);
             $stmt->bindValue(':token_time', $token_expires);
             $stmt->execute();
-
+            
+            if(!sendVerifyMail($email, $token)){
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "Request Verify Issued !"]);
+                return;
+            }
+        
             http_response_code(201);
             echo json_encode(["success" => true, "message" => "Account Created Successfully !"]);
 
@@ -221,7 +230,9 @@
 
                 }else{
                     http_response_code(401);
-                    echo json_encode(["success" => false, "message" => "Account not verified"]);      
+                    echo json_encode([  "success" => false, 
+                                        "message" => "Account not verified",
+                                        "verify" => false]);      
                     
                 }
                 
