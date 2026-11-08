@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from 'react-router-dom';
 
-import { loginApi, verifySession } from '../api/auth.ts'
+import { loginApi, verifySession } from '../api/auth.ts';
+import { newVerLink } from '../api/verify.tsx';
 
 
 function Login(){
@@ -12,6 +13,18 @@ function Login(){
     const redirect = useNavigate();
 
     const [notVerified, setNoVerified] = useState(false);
+
+    useEffect(() =>{
+        async function checkSession(){
+            const session = await verifySession();
+            if(session.success){
+                redirect("/profile")
+            }
+        }
+
+        checkSession();
+
+    }, [redirect])
 
     async function handleLogin(e: React.FormEvent){
         e.preventDefault();
@@ -26,17 +39,12 @@ function Login(){
         }
     };
 
-    useEffect(() =>{
-        async function checkSession(){
-            const session = await verifySession();
-            if(session.success){
-                redirect("/profile")
-            }
-        }
+    async function handleNewVerLink(username : string){
+        const response = await newVerLink(username);
+        setMessage(response.message);
+    }
 
-        checkSession();
 
-    }, [redirect])
 
 
     return(
@@ -46,19 +54,19 @@ function Login(){
                     
                     <div>
                         <p className="text-red-700">{message}</p>
-                        <form  onSubmit={handleLogin}
+                        <div 
                                 className="flex w-full max-w-sm flex-col items-center justify-center gap-2 text-white">
                             <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username/Email" ></input>
                             <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" ></input>
                             <Link to="/signup">Create an account ?</Link>
                             <br />
-                            <button type="submit">Login</button>
-                        </form>
+                            <button type="button" onClick={handleLogin}>Login</button>
+                        </div>
                     </div>
 
-                    {notVerified && (
+                    {notVerified && username && (
                         <div className="">
-                            <a href="">Send new verify link (email)</a>
+                            <a onClick={() => handleNewVerLink(username)}>Send new verify link (email)</a>
                         </div>
                     )}
                     

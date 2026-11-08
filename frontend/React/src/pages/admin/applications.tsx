@@ -29,11 +29,7 @@ function Applications(){
         if(session.success){
             setApplications(session.data);
         }
-    }, [])
-
-    // useEffect(() => {
-
-    // }, [redirect])
+    }, []);
 
     useEffect(() => {
         async function checkSession(){
