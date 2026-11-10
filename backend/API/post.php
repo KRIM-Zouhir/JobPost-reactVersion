@@ -19,16 +19,17 @@
     switch($data['action']){
         case 'get':
             $start = $data['start'] ?? null;
-            $rows_per_page = $data['rows_per_page'] ?? null;
+            $rows = $data['rows'] ?? null;
+            $searchTerm = $data['searchTerm'] ?? null;
         
-            if($start !== null && $rows_per_page !== null){
-                getpost($db, $start, $rows_per_page);
+            if($start !== null && $rows !== null){
+                getpost($db, $start, $rows, $searchTerm);
             }else{
                 http_response_code(400);
                 echo json_encode([
                     "success" => false,
                     "message" => "Pagination values are required",
-                    "pagination" => $start . $rows_per_page
+                    "pagination" => $start . $rows
                 ]);
             }
             break;
@@ -67,12 +68,21 @@
             }
     }
 
-    function getpost($db, $start, $rows_per_page){
-        try{   
-            $sql = "SELECT * FROM  posts  LIMIT $start , $rows_per_page";
+    function getpost($db, $start, $rows_per_page, $searchTerm){
+        try{
 
-            $stmt = $db->prepare($sql);
-            $stmt->execute();
+            if(!$searchTerm){
+                $sql = "SELECT * FROM  posts LIMIT $start , $rows_per_page";
+                $stmt = $db->prepare($sql);
+                $stmt->execute();
+            }else{
+                $sql = "SELECT * FROM  posts WHERE title LIKE :searchTerm LIMIT $start , $rows_per_page";
+                $stmt = $db->prepare($sql);
+                $stmt->execute(
+                    [':searchTerm' => '%' . $searchTerm . '%']
+                );
+            }
+
             $fetch = $stmt->fetchall(PDO::FETCH_ASSOC);
 
             if(!empty($fetch)){
@@ -108,7 +118,7 @@
 
         }catch(PDOException $e){
             http_response_code(400);
-            echo json_encode(["success" => false, "message" => "Request Issued !"]);
+            echo json_encode(["success" => false, "message" => "Request Issued !", "debug" => $e]);
         }
     }
 

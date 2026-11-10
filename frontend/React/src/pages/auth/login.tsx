@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from 'react-router-dom';
 
 import { loginApi, verifySession } from '../api/auth.ts';
-import { newVerLink } from '../api/verify.tsx';
+import { newVerLink } from '../api/verify.ts';
 
 
 function Login(){

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getjobs } from '../api/jobs.ts'
 import {verifySession} from '../api/auth.ts'
 import { applyAPI, verifiedApp } from '../api/applications'
-import type { Job, JobPublic, JobCreate } from "../components/object";
+import type { Job } from "../components/object";
 
 
 
@@ -13,6 +13,7 @@ function Jobs(){
     const rows_per_page = 9;
     
     const [message, setMessage] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
     const [sessionAuth, setSessionAuth] = useState(false);
 
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -36,16 +37,9 @@ function Jobs(){
         }
 
         checkSession();
-        
-        async function handleLoadJobs() {
-            const response = await getjobs(start, rows_per_page); 
-    
-            if(response.success){
-                setJobs(response.data);
-            }
-        }
-    
         handleLoadJobs();
+        
+
     }, [redirect])
 
     useEffect(() => {
@@ -60,6 +54,19 @@ function Jobs(){
         handlePostIds();
     }, [])
 
+    useEffect(() => {
+        handleLoadJobs();
+    }, [searchTerm])
+
+    async function handleLoadJobs() {
+        const response = await getjobs(start, rows_per_page, searchTerm); 
+
+        if(response.success){
+            setJobs(response.data);
+        }
+    }
+
+
     function handleCvChange(e: React.ChangeEvent<HTMLInputElement>){
         if(e.target.files && e.target.files[0]){
             setCv(e.target.files[0]);
@@ -70,8 +77,6 @@ function Jobs(){
             setCover(e.target.files[0]);
         }
     }
-
-
     async function applyJob(e : React.FormEvent, postid: number, posttitle: string){
         e.preventDefault();
         if(!cvfile){
@@ -90,9 +95,12 @@ function Jobs(){
     return(
         <div className='bg-black text-white'>
             <div className='min-h-screen flex flex-col items-center justify-center'>
-                <h3 className='text-center pb-5'>Jobs</h3>
-                    <p className="text-green-700">{message}</p>
-                    
+
+                <div className="text-white text-center">
+                    <h1 className='text-center text-3xl font-bold pb-5'>Jobs</h1>
+                        <input type="text" placeholder='Search jobs' className='p-2 rounded-md text-white' onChange={(e) => {setSearchTerm(e.target.value)}}/>
+                </div>
+                <p className="text-green-700">{message}</p>
                 <div className='grid grid-cols-3 gap-4 p-4'>
                     {jobs.map((job) => 
 

@@ -118,7 +118,7 @@
         
     }
 
-    function getpost($db ,$start , $rows_per_page){
+    function getpost($db ,$start , $rows_per_page, $searchTerm){
         try{ 
             if(isset($_GET['page-nr'])){
                 $page = $_GET['page-nr'] - 1 ;
@@ -126,10 +126,18 @@
             }
             
             $table ="posts";
-            $sql = "SELECT * FROM  $table  LIMIT $start , $rows_per_page";
+            if($searchTerm){
+                $sql = "SELECT * FROM  $table  LIMIT $start , $rows_per_page  ";
+                $stmt = $db->prepare($sql);
+                $stmt->execute();
+            }else{
+                $sql = "SELECT * FROM  $table  LIMIT $start , $rows_per_page WHERE title LIKE '%:searchTerm%' ";
+                $stmt = $db->prepare($sql);
+                $stmt->execute(
+                    [':searchTerm' => $searchTerm]
+                );
+            }
 
-            $stmt = $db->prepare($sql);
-            $stmt->execute();
             $fetch = $stmt->fetchall(PDO::FETCH_ASSOC);
 
             if (empty($fetch) ){

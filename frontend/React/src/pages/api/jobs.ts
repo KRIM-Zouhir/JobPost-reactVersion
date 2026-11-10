@@ -1,11 +1,11 @@
-import type { Job, JobPublic, JobCreate } from "../components/object";
+import type { JobPublic, JobCreate } from "../components/object";
 
-export async function getjobs(start: number, rows_per_page: number,){
+export async function getjobs(start: number, rows: number, searchTerm: string){
     const response = await fetch("http://localhost:8000/post.php", {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
         credentials: "include",
-        body: JSON.stringify({action:"get", start, rows_per_page})
+        body: JSON.stringify({action:"get", start, rows, searchTerm})
     })
 
     return response.json();
