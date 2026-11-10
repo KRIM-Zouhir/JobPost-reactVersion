@@ -241,8 +241,6 @@
         
     }
 
-    
-    
     function update_user($db , $userid , $username ,  $useremail , $userrole , $userverified , $usertoken , $usertokenexpires , $userdate){
         try{
             $table = "users";

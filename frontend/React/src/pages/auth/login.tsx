@@ -59,6 +59,7 @@ function Login(){
                             <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username/Email" ></input>
                             <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" ></input>
                             <Link to="/signup">Create an account ?</Link>
+                            <Link to="/forgot-password">Forgot your password ?</Link>
                             <br />
                             <button type="button" onClick={handleLogin}>Login</button>
                         </div>
@@ -67,6 +68,7 @@ function Login(){
                     {notVerified && username && (
                         <div className="">
                             <a onClick={() => handleNewVerLink(username)}>Send new verify link (email)</a>
+
                         </div>
                     )}
                     

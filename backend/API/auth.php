@@ -13,6 +13,13 @@
     require_once __DIR__ . '/connect.php';
     require_once __DIR__ . '/helpers/helper.php';
 
+    require_once __DIR__ . '/../../vendor/autoload.php';
+    use PHPMailer\PHPMailer\PHPMailer;
+
+
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
+
 
     date_default_timezone_set('Europe/Paris');
     header("Content-Type: application/json");
@@ -21,7 +28,7 @@
     $action = $data['action'] ?? "";
     session_start();
 
-    switch($action){
+    switch($action):
         case 'signup':
             $signup_username = $data['username'] ?? '';
             $signup_email = filter_var($data['email']  ?? '' , FILTER_VALIDATE_EMAIL) ;
@@ -155,13 +162,19 @@
                 http_response_code(400);
                 echo json_encode([  "success" => true, 
                                     "message" => "Infos arent correct !"]);
-            
+            }
+            break;
+        case 'forgotPwd':
+            try{
+                forgotPWD($db, $data['email']);
+            }catch(Exception $e){
+                http_response_code(400);
+                echo json_encode([  "success" => true, 
+                                    "message" => "Infos arent correct !"]);
             }
             break;
 
-        
-    }
-
+        endswitch;
 
 
 
@@ -405,6 +418,47 @@
             echo json_encode([" success" => false, 
                                 "message" => "Request Issued !"]);
          
+        
+        }
+    }
+
+    function forgotPWD($db, $email){
+        try{
+            $sql = "SELECT id, username, email FROM users WHERE email = :email LIMIT 1";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([":email" => $email]);
+            $fetch = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if(!$fetch['email']){
+                http_response_code(400);
+                echo json_encode(["success" => true, "message" => "No account exist with this email !"]);
+                return;
+            }
+
+            $code = strtoupper(bin2hex(random_bytes(4)));
+            $code_hash = hash_hmac('sha256', $code, $_ENV['OTP_SECRET']);
+            $code_expiration = date('Y-m-d H:i:s', strtotime('+1 minutes'));
+
+            $sql_insert = "INSERT INTO password_reset
+                            (userid, code_hash, expires_at, attempts)
+                            VALUES 
+                            (:userid, :code_hash, :expires_at, 0)";
+            $stmt_insert = $db->prepare($sql_insert);
+            $stmt_insert->execute(
+                ["userid" => $fetch['id'],
+                ":code_hash" => $code_hash, 
+                "expires_at" => $code_expiration]
+            );
+
+            http_response_code(200);
+            echo json_encode(["success" => true, "message" => "Code created successfully !"]);
+
+        
+        }catch(PDOException $e){
+            http_response_code(400);
+            echo json_encode([" success" => false, 
+                                "message" => "Request Issued !",
+                                "debug" => $e]);
         
         }
     }

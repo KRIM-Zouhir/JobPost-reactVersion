@@ -18,6 +18,7 @@ import Aboutus from './pages/main/aboutus';
 import Applications from './pages/admin/applications';
 import Posts from './pages/admin/posts';
 import Users from './pages/admin/users';
+import ForgotPwd from './pages/auth/forgotpwd';
 
 const router = createBrowserRouter([
   {
@@ -27,6 +28,7 @@ const router = createBrowserRouter([
       { path: "/signup", element: <SignUp />},
       { path: "/login", element: <Login />},
       { path: "/profile", element: <Profile />},
+      { path: "/forgot-password", element: <ForgotPwd />},
       { path: "/verifymail", element: <VerifyMail />},
       { path: "/verified", element: <TokenValidation />},
       { path: "/jobs", element: <Jobs />},
