@@ -7,7 +7,7 @@
     $dotenv->load();
 
     
-    function sendVerifyMail($usermail, $token){
+    function sendMail($usermail, $body = null){
         $mail = new PHPMailer();
         
         try{
@@ -17,21 +17,15 @@
             $mail->SMTPAuth   = true;                                
             $mail->Username   = $_ENV['mailUsername'];                  
             $mail->Password   = $_ENV['mailPassword']; 
-            $mail->Port       = 587;     
+            $mail->Port       = $_ENV['mailPort'];     
 
             $mail->setFrom('hello@demomailtrap.com', 'JobPost');
             $mail->addAddress($usermail); 
 
             $mail->isHTML(true);  
-            $mail->Subject = 'Verify your email - JobPost';
+            $mail->Subject = 'JobPost';
             
-            $mail->Body = "
-                <h2>Welcome to JobPost!</h2>
-                <p>Thanks for signing up. Please verify your email address to activate your account.</p>
-                <p><a href='http://localhost:5173/verified?token={$token}'>Click here to verify your email</a></p>
-                <p>This link will expire in 10 minutes.</p>
-                <p>If you didn't sign up for JobPost, you can safely ignore this email.</p>
-            ";
+            $mail->Body = $body;
 
             $mail->send();
             return true;

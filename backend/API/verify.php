@@ -73,6 +73,7 @@
         try{
             $token = bin2hex(random_bytes(32));
             $token_expires = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+            $body = "Your verification link is: <a href='http://localhost:5173/verify?token=$token'>Verify Account</a>. This link will expire in 10 minutes.";
             
             $sql = "UPDATE users SET verification_token = :token, token_expires_at = :tokendate WHERE email = :login OR username = :login";
 
@@ -92,7 +93,7 @@
                 $fetch = $stmt1->fetch(PDO::FETCH_ASSOC);
             }
 
-            if(!sendVerifyMail($fetch['email'], $token)){
+            if(!sendMail($fetch['email'], $body)){
                 http_response_code(400);
                 echo json_encode(["success" => false, "message" => "Request Verify Issued !"]);
                 return;

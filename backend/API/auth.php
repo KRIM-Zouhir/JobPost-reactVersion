@@ -173,7 +173,26 @@
                                     "message" => "Infos arent correct !"]);
             }
             break;
+        case 'verifyCode':
+            try{
+                verifyCode($db, $data['email'], $data['code']);
+            }catch(Exception $e){
+                http_response_code(400);
+                echo json_encode([  "success" => true, 
+                                    "message" => "Infos arent correct !"]);
+            }
+            break;
+        case 'resetPassword':
+            try{
+                resetPwd($db, $data['email'], $data['newPassword']);
+            }catch(Exception $e){
+                http_response_code(400);
+                echo json_encode([  "success" => true, 
+                                    "message" => "Infos arent correct !"]);
+            }
+            break;
 
+        
         endswitch;
 
 
@@ -185,6 +204,13 @@
             $password = password_hash($password, PASSWORD_DEFAULT);
             $token = bin2hex(random_bytes(32));
             $token_expires = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+
+            $body = "
+                <h2>Welcome to JobPost!</h2>
+                <p>Thanks for signing up. Please verify your email address to activate your account.</p>
+                <p><a href='http://localhost:5173/verified?token={$token}'>Click here to verify your email</a></p>
+                <p>This link will expire in 10 minutes.</p>
+                <p>If you didn't sign up for JobPost, you can safely ignore this email.</p>";
             
             $sql = "INSERT INTO users 
             (username, email, password, role, verification_token, token_expires_at)
@@ -200,7 +226,7 @@
             $stmt->bindValue(':token_time', $token_expires);
             $stmt->execute();
             
-            if(!sendVerifyMail($email, $token)){
+            if(!sendMail($email, $body)){
                 http_response_code(400);
                 echo json_encode(["success" => false, "message" => "Request Verify Issued !"]);
                 return;
@@ -431,7 +457,7 @@
             
             if(!$fetch['email']){
                 http_response_code(400);
-                echo json_encode(["success" => true, "message" => "No account exist with this email !"]);
+                echo json_encode(["success" => false, "message" => "No account exist with this email !"]);
                 return;
             }
 
@@ -439,6 +465,7 @@
             $code_hash = hash_hmac('sha256', $code, $_ENV['OTP_SECRET']);
             $code_expiration = date('Y-m-d H:i:s', strtotime('+1 minutes'));
 
+            $body = "hi {$fetch['username']},<br><br>Your password reset code is: <strong>{$code}</strong>.<br>This code will expire in 1 minute.<br><br>If you didn't request a password reset, you can safely ignore this email.";
             $sql_insert = "INSERT INTO password_reset
                             (userid, code_hash, expires_at, attempts)
                             VALUES 
@@ -450,8 +477,9 @@
                 "expires_at" => $code_expiration]
             );
 
+            sendMail($fetch['email'], $body);
             http_response_code(200);
-            echo json_encode(["success" => true, "message" => "Code created successfully !"]);
+            echo json_encode(["success" => true, "message" => "Code created successfully !", "debug" => $code, "statuscode" => true]);
 
         
         }catch(PDOException $e){
@@ -460,6 +488,82 @@
                                 "message" => "Request Issued !",
                                 "debug" => $e]);
         
+        }
+    }
+
+    function verifyCode($db, $email, $code){
+        try{
+            $sql = "SELECT pr.id, pr.userid, pr.code_hash, pr.expires_at, pr.attempts, u.email 
+                    FROM password_reset AS pr JOIN users AS u 
+                    WHERE u.email = :email AND pr.userid = u.id 
+                    ORDER BY pr.expires_at DESC LIMIT 1";
+            $stmt= $db->prepare($sql);
+            $stmt->execute([":email" => $email]);
+            $fetch = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if(!$fetch['email']){
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "No account exist with this email !"]);
+                return;
+            }
+
+            if($fetch['attempts'] >= 3){
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "Maximum attempts reached. Please request a new code."]);
+                return;
+            }
+
+            if($fetch['expires_at'] < date('Y-m-d H:i:s')){
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "Code has expired. Please request a new code."]);
+                return;
+            }
+
+            if(!hash_equals($fetch['code_hash'], hash_hmac('sha256', $code, $_ENV['OTP_SECRET']))){
+                $sql_update = "UPDATE password_reset SET attempts = attempts + 1, verified_at = NOW() WHERE id = :id";
+                $stmt_update = $db->prepare($sql_update);
+                $stmt_update->execute([":id" => $fetch['id']]);
+
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "Invalid code. Please try again."]);
+                return;
+            }
+
+
+            http_response_code(200);
+            echo json_encode(["success" => true, "message" => "Code verified successfully !", "statusverify" => true]);
+            
+        }catch(PDOException $e){
+            http_response_code(400);
+            echo json_encode([" success" => false, 
+                                "message" => "Request Issued !",
+                                "debug" => $e]);
+        }
+    }
+
+    function resetPwd($db, $email, $newPwd){
+        try{
+            $sql = "UPDATE users SET password = :password WHERE email = :email";
+
+            $stmt = $db->prepare($sql);
+            $stmt->execute(
+                [':password' => password_hash($newPwd, PASSWORD_DEFAULT),
+                ':email' => $email]
+            );
+
+            if($stmt->rowCount() === 0){
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "No account exist with this email !"]);
+                return;
+            }
+            
+            http_response_code(200);
+            echo json_encode(["success" => true, "message" => "Password reset successfully !"]);
+        }catch(PDOException $e){
+            http_response_code(400);
+            echo json_encode([" success" => false, 
+                                "message" => "Request Issued !",
+                                "debug" => $e]);
         }
     }
 ?>

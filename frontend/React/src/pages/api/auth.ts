@@ -109,3 +109,23 @@ export async function forgotPwd(email : string){
     });
     return response.json();
 }
+
+export async function verifyCode(email: string, code: string){
+    const response = await fetch("http://localhost:8000/auth.php", {
+        method: "POST",
+        headers: { "Content-Type" : "application/json"},
+        credentials: "include",
+        body: JSON.stringify({action: "verifyCode", email, code})
+    });
+    return response.json();
+}
+
+export async function resetPassword(email: string, newPassword: string){
+    const response = await fetch("http://localhost:8000/auth.php", {
+        method: "POST",
+        headers: { "Content-Type" : "application/json"},
+        credentials: "include",
+        body: JSON.stringify({action: "resetPassword", email, newPassword})
+    });
+    return response.json();
+}
