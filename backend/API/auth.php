@@ -129,7 +129,7 @@
             
         case 'getUsers':
             try{
-                getUsers($db, $data['start'], $data['row']);
+                getUsers($db, $data['start'], $data['rows'], $data['searchTerm']);
             }catch(Exception $e){
                 http_response_code(400);
                 echo json_encode([  "success" => true, 
@@ -318,12 +318,24 @@
         }
     }
 
-    function getUsers($db, $start, $row){
+    function getUsers($db, $start, $row, $searchTerm){
         try{
-            $sql = "SELECT * FROM users LIMIT $start, $row";
+            if($searchTerm){
+                $sql = 
+                "SELECT * FROM users 
+                WHERE username LIKE :searchTerm OR email LIKE :searchTerm 
+                LIMIT $start, $row";
 
-            $stmt = $db->prepare($sql);
-            $stmt->execute();
+                $stmt = $db->prepare($sql);
+                $stmt->execute(
+                    [":searchTerm" => '%' . $searchTerm . '%']
+                );
+            }else{
+                $sql = "SELECT * FROM users LIMIT $start, $row";
+                $stmt = $db->prepare($sql);
+                $stmt->execute();
+            }
+
             $fetchall = $stmt->fetchall(PDO::FETCH_ASSOC);
 
             if(!empty($fetchall)){
@@ -353,7 +365,9 @@
             }
         }catch(PDOException $e){
             http_response_code(400);
-            echo json_encode(["success" => false, "message" => "Request Issued !"]);
+            echo json_encode(["success" => false, 
+                            "message" => "Request Issued !",
+                            "debug" => $e]);
         }
     }
 

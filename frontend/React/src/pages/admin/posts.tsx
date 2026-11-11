@@ -13,10 +13,11 @@ function Posts(){
     const redirect = useNavigate();
     const [message, setMessage] = useState("");
     
-    const start = 0;
-    const rows_per_page = 9;
+    const [start, setStart] = useState(0);
+    const rows = 9;
 
     const [posts, setPosts] = useState<Job[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedPost, setSelectedPost] = useState<Job | null>(null);
 
 
@@ -35,13 +36,7 @@ function Posts(){
     
     const [confirm, setConfirm] = useState("");
 
-    const checkPosts = useCallback(async () => {
-        const response = await getjobs(start, rows_per_page); 
-        if(response.success){
-            setPosts(response.data);
-        }
-    }, [])
-
+    
     useEffect(() => {
         async function checkSession(){
             const session = await verifySession();
@@ -51,8 +46,27 @@ function Posts(){
         }
 
         checkSession();
+    }, [redirect]);
+    
+    useEffect(() => {
+        const controller = new AbortController();
+
+        const checkPosts = async () => {
+            try{
+                const response = await getjobs(start, rows, searchTerm); 
+                if(response.success){
+                    setPosts(response.data);
+                }
+            }catch(err){
+                if((err as Error).name !== 'AbortError'){
+                    console.error(err);
+                }
+            }
+        }
         checkPosts();
-    }, [checkPosts])
+
+        return () => controller.abort();
+    }, [start, rows, searchTerm, message])
     
     
     function handleEditChange(e: React.ChangeEvent<HTMLInputElement>){
@@ -64,7 +78,7 @@ function Posts(){
         const result = await createJob(data);
         if(result.success){
             setMessage(result.message);
-            checkPosts();
+            // checkPosts();
         }
     }
 
@@ -72,7 +86,7 @@ function Posts(){
         const result = await editJob(data);
         if(result.success){
             setMessage(result.message);
-            checkPosts();
+            // checkPosts();
         }
     }
 
@@ -80,21 +94,24 @@ function Posts(){
         const result = await deleteJob(data);
         if(result.success){
             setMessage(result.message);
-            checkPosts();
+            // checkPosts();
         }
     }
-    
     
     return(
         <div className='bg-black text-white'>
             <div className="min-h-screen flex flex-col justify-center items-center gap-4">
-                <div className='text-center'></div>
-                    <p>Posts</p>
-
-                    <div className="mt-5 text-center">
-                        <button type="button" onClick={() => (setShowForm(prev => !prev))}>
+                
+                    <div className="mt-5 gap-5">
+                        <h1 className="text-3xl text-center">Posts</h1>
+                        <input type="text" placeholder='Search jobs' className='p-2 rounded-md text-white' onChange={(e) => {setSearchTerm(e.target.value)}}/>
+                        <button type="button" onClick={() => (setShowForm(prev => !prev))} className="p-2 rounded-md">
                             Add post
                         </button>
+                    </div>
+
+
+                    <div className="text-center">
 
                         {showForm && (
                             <div className="">
@@ -121,15 +138,18 @@ function Posts(){
                                 <p>{post.description}</p>
                                 <p>{post.salary}</p>
                                 <p>{post.status}</p>
-                                <button type="button" onClick={() => {setSelectedPost(post);
-                                                                    setEditForm(prev => !prev) }}>
-                                    Edit post
-                                </button>
 
-                                <button type="button" onClick={() => (setSelectedPost(post),
-                                                                    setDeleteForm(prev => !prev))}>
-                                    Delete post
-                                </button>
+                                <div className="flex gap-5">
+                                    <button type="button" onClick={() => {setSelectedPost(post);
+                                                                        setEditForm(prev => !prev) }}>
+                                        Edit
+                                    </button>
+
+                                    <button type="button" onClick={() => (setSelectedPost(post),
+                                                                        setDeleteForm(prev => !prev))}>
+                                        Delete
+                                    </button>
+                                </div>
 
                             </article>
                         )}

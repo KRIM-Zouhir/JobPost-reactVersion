@@ -22,14 +22,13 @@
             $rows = $data['rows'] ?? null;
             $searchTerm = $data['searchTerm'] ?? null;
         
-            if($start !== null && $rows !== null){
+            if($start !== null && $rows !== null ){
                 getpost($db, $start, $rows, $searchTerm);
             }else{
                 http_response_code(400);
                 echo json_encode([
                     "success" => false,
-                    "message" => "Pagination values are required",
-                    "pagination" => $start . $rows
+                    "message" => "Missing some infos !"
                 ]);
             }
             break;
@@ -76,7 +75,9 @@
                 $stmt = $db->prepare($sql);
                 $stmt->execute();
             }else{
-                $sql = "SELECT * FROM  posts WHERE title LIKE :searchTerm LIMIT $start , $rows_per_page";
+                $sql = "SELECT * FROM  posts 
+                WHERE title LIKE :searchTerm OR description LIKE :searchTerm OR company LIKE :searchTerm 
+                LIMIT $start , $rows_per_page";
                 $stmt = $db->prepare($sql);
                 $stmt->execute(
                     [':searchTerm' => '%' . $searchTerm . '%']

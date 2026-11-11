@@ -17,16 +17,18 @@
 
             $user_id = $_SESSION['user_id'] ?? null;
             $post_id = $_POST['postid'] ?? null;
-            $post_title = $_POST['posttitle'] ?? null;
             $cover_name = null;
 
-            $post_folder_path = "uploads/" . "post_" . $post_id . "/";
-            if(!is_dir($post_folder_path)){
-                mkdir($post_folder_path);
+            $folder_path = __DIR__ . "/uploads/";
+            if(!is_dir($folder_path)){
+                mkdir($folder_path);
+                $post_folder_path = $folder_path . "post_" . $post_id . "/";
+                if(!is_dir($post_folder_path)){
+                    mkdir($post_folder_path);
+                }
             }
             
-
-            if($user_id && $post_id && $post_title){
+            if($user_id && $post_id ){
                 $status = "pending";
                 if((isset($_FILES['cvfile']) ) && $_FILES['cvfile']['error'] == 0){
                     $tmp = $_FILES['cvfile']['tmp_name'];
@@ -40,7 +42,7 @@
 
                     move_uploaded_file($tmp, $post_folder_path . $cover_name);
                 } 
-                newApply($db, $user_id, $post_id, $post_title, $cv_name, $cover_name, $status);
+                newApply($db, $user_id, $post_id,  $cv_name, $cover_name, $status);
             }else{
                 http_response_code(400);
                 echo json_encode(["success" => false, "message" => "Missing some infos !"]);
@@ -61,11 +63,10 @@
             
         case 'getApp':
             try{
-                
                 $start = (int)  $_POST['start'] ?? null;
-                $row_per_page = (int) $_POST['rows'] ?? null;
-               
-                getApps($db, $start, $row_per_page);
+                $rows = (int) $_POST['rows'] ?? null;
+                
+                getApps($db, $start, $rows, $_POST['searchTerm']);
             }catch(Exception $e){
                 http_response_code(400);
                 echo json_encode(["success" => false, "message" => "Missing some infos !"]);
@@ -84,14 +85,14 @@
     }
 
 
-    function newApply($db , $user_id, $post_id, $post_title, $cv_name , $cover_name , $status){
+    function newApply($db , $user_id, $post_id, $cv_name , $cover_name , $status){
         try{
-            $sql = "INSERT INTO applications ( user_id , post_id , post_title , cv_filename , cover_note , status) VALUES (:user_id , :post_id, :post_title, :cv_filename , :cover_note , :status)";
+            $sql = "INSERT INTO applications (user_id, post_id, cv_filename, cover_note, status) 
+                    VALUES (:user_id, :post_id, :cv_filename, :cover_note , :status)";
 
             $stmt = $db->prepare($sql);
             $stmt->bindValue(':user_id', $user_id);
             $stmt->bindValue(':post_id', $post_id);
-            $stmt->bindValue(':post_title', $post_title);
             $stmt->bindValue(':cv_filename', $cv_name);
             $stmt->bindValue(':cover_note', $cover_name);
             $stmt->bindValue(':status', $status);
@@ -104,9 +105,8 @@
         }catch(PDOException $e)
         {
             error_log("DB Error in newApply: " . $e->getMessage());
-
             http_response_code(400);
-            echo json_encode(["success" => false, "message" => "Application Failed !"]);
+            echo json_encode(["success" => false, "message" => "Application Failed !", "debug" => $e]);
         }
     }
 
@@ -143,32 +143,46 @@
         }
     }
 
-    function getApps($db, $start, $row_per_page){
+    function getApps($db, $start, $rows, $searchTerm){
         try{
-            if(isset($_GET['page-nr'])){
-                $page = $_GET['page-nr'] - 1 ;
-                $start = $page * $row_per_page;
+            if(!$searchTerm){
+                $sql = "SELECT app.*, us.username, pos.title 
+                        FROM applications as app
+                        JOIN users as us ON us.id = app.user_id
+                        JOIN posts as pos ON pos.id = app.post_id
+                        ORDER BY app.applied_at DESC
+                        LIMIT $start, $rows";
+                $stmt = $db->prepare($sql);
+                $stmt->execute();
+            }else{
+                $sql = "SELECT app.*, us.username, pos.title 
+                        FROM applications as app
+                        JOIN users as us ON us.id = app.user_id
+                        JOIN posts as pos ON pos.id = app.post_id
+                        WHERE username LIKE :searchTerm 
+                            OR title LIKE :searchTerm
+                        ORDER BY app.applied_at DESC
+                        LIMIT $start, $rows";
+                $stmt = $db->prepare($sql);
+                $stmt->execute(
+                    [':searchTerm' => '%' . $searchTerm . '%']
+                );
             }
-
-            $applications = [];
-            $sql = "SELECT * FROM applications LIMIT $start, $row_per_page";
-
-            $stmt = $db->prepare($sql);
-            $stmt->execute();
+            
             $fetch = $stmt->fetchall(PDO::FETCH_ASSOC);
 
-
+            $applications = [];
             foreach($fetch as $row){
                 $application = [
                     'appid' => $row['id'],
                     'userid' => $row['user_id'],
+                    'username' => $row['username'],
                     'postid' => $row['post_id'],
-                    'posttitle' => $row['post_title'],
+                    'posttitle' => $row['title'],
                     'cvfilename' => $row['cv_filename'],
                     'coverfilename' => $row['cover_note'],
                     'status' => $row['status'],
                     'appdate' => $row['applied_at']
-
                     ];
                 $applications[] = $application;
                 

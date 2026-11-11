@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { getjobs } from '../api/jobs.ts'
@@ -10,7 +10,7 @@ import type { Job } from "../components/object";
 
 function Jobs(){
     const start = 0;
-    const rows_per_page = 9;
+    const rows = 9;
     
     const [message, setMessage] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
@@ -37,8 +37,6 @@ function Jobs(){
         }
 
         checkSession();
-        handleLoadJobs();
-        
 
     }, [redirect])
 
@@ -52,19 +50,30 @@ function Jobs(){
         }
 
         handlePostIds();
-    }, [])
+    }, [sessionAuth, message])
 
     useEffect(() => {
-        handleLoadJobs();
-    }, [searchTerm])
+        const controller = new AbortController();
 
-    async function handleLoadJobs() {
-        const response = await getjobs(start, rows_per_page, searchTerm); 
-
-        if(response.success){
-            setJobs(response.data);
+        const handleLoadJobs = async () => {
+            const response = await getjobs(start, rows, searchTerm); 
+                try{
+                    if(response.success){
+                        setJobs(response.data);
+                    }
+                }catch(err){
+                    if((err as Error).name !== 'AbortError'){
+                        console.error(err);
+                    }
+                }
         }
-    }
+
+        handleLoadJobs();
+
+        return () => controller.abort();
+
+    },  [start, rows, searchTerm, message] )
+
 
 
     function handleCvChange(e: React.ChangeEvent<HTMLInputElement>){
@@ -77,14 +86,14 @@ function Jobs(){
             setCover(e.target.files[0]);
         }
     }
-    async function applyJob(e : React.FormEvent, postid: number, posttitle: string){
+    async function applyJob(e : React.FormEvent, postid: number){
         e.preventDefault();
         if(!cvfile){
             setMessage("No CV file found !")
             return;
         } 
 
-        const applyResult = await applyAPI(postid, posttitle, cvfile, coverfile)
+        const applyResult = await applyAPI(postid, cvfile, coverfile)
         setMessage(applyResult.message)
 
     }
@@ -125,7 +134,7 @@ function Jobs(){
                 ( 
                     <div className='pt-5' id="applyForm">
                         <p>{selectedJob.title}</p>
-                        <form onSubmit={(e) => applyJob(e, selectedJob.postid, selectedJob.title)}>
+                        <form onSubmit={(e) => applyJob(e, selectedJob.postid)}>
                             <input type="file" accept="file/*" onChange={handleCvChange}/>
                             <input type="file" accept="file/*" onChange={handleCoverChange}/>
                             <button type="submit">Submit</button>

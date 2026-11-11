@@ -1,9 +1,8 @@
 
-export async function applyAPI(postid : number, posttitle : string, cv: File , cover: File | null){
+export async function applyAPI(postid : number, cv: File , cover: File | null){
     const formData = new FormData(); 
         formData.append("action", "apply");
         formData.append("postid", String(postid));
-        formData.append("posttitle", posttitle);
         formData.append("cvfile", cv);
         if(cover){
             formData.append("coverfile", cover);
@@ -32,11 +31,12 @@ export async function verifiedApp(){
     return response.json();
 }
 
-export async function getApps(start: number, rows_per_page: number){
+export async function getApps(start: number, rows: number, searchTerm: string){
     const formData = new FormData(); 
         formData.append("action", "getApp");
         formData.append("start", String(start));
-        formData.append("rows", String(rows_per_page));
+        formData.append("rows", String(rows));
+        formData.append("searchTerm", String(searchTerm));
 
     const response = await fetch("http://localhost:8000/apply.php", {
         method: "POST",

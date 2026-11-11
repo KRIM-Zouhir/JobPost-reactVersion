@@ -8,9 +8,11 @@ import { verifySession} from '../api/auth.ts'
 
 function Users(){
     const start = 0;
-    const row = 9;
+    const rows = 9;
 
     const redirect = useNavigate();
+
+    const [message, setMessage] = useState("");
 
     const [ users, setUsers ] = useState<User[]>([]);
     const [ createdUser, setCreatedUser ] = useState<UserCreate>({
@@ -20,6 +22,8 @@ function Users(){
         password: ""
     });
     const [ selectedUser, setSelectedUser ] = useState<User | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
+
 
     const [ createForm, setCreateForm ] = useState(false);
     const [ editForm, setEditForm ] = useState(false);
@@ -27,13 +31,29 @@ function Users(){
 
     const [confirm, setConfirm] = useState("");
 
-    const verifyUsers = useCallback(async () => {
-        const response = await getUsers(start, row);
-        console.log(response);
-        if(response.success){
-            setUsers(response.data);
+    
+    useEffect(() => {
+        const controller = new AbortController();
+        
+        const verifyUsers = async () => {
+            try{
+                const response = await getUsers(start, rows, searchTerm);
+                console.log(response);
+                if(response.success){
+                    setUsers(response.data);
+                }
+            }catch(err){
+                if((err as Error).name !== 'AbortError'){
+                    console.error(err);
+                }
+            }
         }
-    }, [])
+
+        verifyUsers();
+
+        return () => controller.abort();
+
+    }, [start, rows, searchTerm])
     
     
     useEffect(() => {
@@ -43,10 +63,8 @@ function Users(){
                 redirect("/login")
             }
         }
-
         checkSession();
-        verifyUsers();
-    }, [verifyUsers])
+    }, [redirect])
 
 
     function handleCreateUser(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>){
@@ -61,19 +79,19 @@ function Users(){
     async function reqAddUser(data: UserCreate){
         const response = await createUser(data);
         if(response.success){
-            verifyUsers();
+            setMessage(response.message);
         }
     }
     async function reqEditUser(data: User){
         const response = await editUser(data);
         if(response.success){
-            verifyUsers();
+            setMessage(response.message);
         }
     }
     async function reqDeleteUser(data: User){
         const response = await deleteUser(data);
         if(response.success){
-            verifyUsers();
+            setMessage(response.message);
         }
     }
 
@@ -81,9 +99,9 @@ function Users(){
         <div className='bg-black text-white'>
             <div className="min-h-screen flex flex-col justify-center items-center gap-4">
                 <div className='text-center'></div>
-                    <p>Users</p>
-
+                        <h1 className='text-3xl'>Users</h1>
                     <div>
+                        <input type="text" placeholder='Search jobs' className='p-2 rounded-md text-white' onChange={(e) => {setSearchTerm(e.target.value)}}/>
                         <button type='button' onClick={() => setCreateForm(prev => !prev)}>Add User</button>
                     </div>
 

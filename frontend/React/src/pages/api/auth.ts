@@ -56,12 +56,12 @@ export async function verifySession(){
     return response.json();
 }
 
-export async function getUsers(start: number, row: number){
+export async function getUsers(start: number, rows: number, searchTerm: string){
     const response = await fetch("http://localhost:8000/auth.php", {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
         credentials: "include",
-        body: JSON.stringify({action: "getUsers", start, row})
+        body: JSON.stringify({action: "getUsers", start, rows, searchTerm})
     });
 
     return response.json();

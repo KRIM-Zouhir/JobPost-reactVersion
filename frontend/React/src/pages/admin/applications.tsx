@@ -8,6 +8,7 @@ import { verifySession} from '../api/auth.ts'
 type Application = {
     appid: number;
     userid: string;
+    username: string;
     postid: number;
     posttitle: string;
     cvfilename: string;
@@ -22,14 +23,30 @@ function Applications(){
     const redirect = useNavigate();
 
     const [message, setMessage] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
     const [applications, setApplications] = useState<Application[]>([]);
 
-    const checkApps = useCallback(async () => {
-        const session = await getApps(start, rows);
-        if(session.success){
-            setApplications(session.data);
-        }
-    }, []);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const checkApps = async () => {
+            try{
+                const session = await getApps(start, rows, searchTerm);
+                if(session.success){
+                    setApplications(session.data);
+                }
+            }catch(err){
+                if((err as Error).name !== 'AbortError' ){
+                    console.log(err);
+                }
+
+            }
+        };
+
+        checkApps();
+
+        return () => controller.abort();
+    }, [start, rows, searchTerm])
 
     useEffect(() => {
         async function checkSession(){
@@ -40,21 +57,25 @@ function Applications(){
         }
 
         checkSession();
-
-        checkApps();
-    }, [checkApps])
+    }, [redirect])
 
     async function statusApp(appid: number, status: string){
         const session = await statusAdmin(appid, status);
         setMessage(session.message);
-        if(session.success) {checkApps();}
+        if(session.success){
+            setMessage(session.message)
+        }
     }
 
 
     return(
         <div className='bg-black text-white'>
             <div className="min-h-screen flex flex-col justify-center items-center gap-4">
-                <div className='text-center'> <p>Applications</p></div>
+                <div className='text-center'> 
+                    <h1 className='text-3xl'>Applications</h1>
+                </div>
+                    <input type="text" placeholder='Search jobs' className='p-2 rounded-md text-white' onChange={(e) => {setSearchTerm(e.target.value)}}/>
+
                     <p className="text-green-700">{message}</p>
 
 
@@ -63,9 +84,9 @@ function Applications(){
 
                             <article key={application.appid} >
                                 <h5>{application.userid}</h5>
+                                <h5>{application.username}</h5>
                                 <h5>{application.postid}</h5>
                                 <p>{application.posttitle} </p>
-
 
                                 <button type="button"><a href={`http://localhost:8000/uploads/post_${application.postid}/${application.cvfilename}`}>CV</a></button>
                                 
